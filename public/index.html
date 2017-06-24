@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="user-scalable=yes, width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <!-- {# css #} -->
+    <link rel="stylesheet" type="text/css" href="/css/index.css" />
+
+    <!-- {# main script #} -->
+
+  </head>
+
+  <body>
+    <div id="wrapper">
+      <div id="header">
+        <div id="forms">
+          <form id="api-call" class="api-form">
+            <line class='input-line'>
+              <label for="as_and"> with all of these words: </label>
+              <input id="as_and" class="input" type="text" name="as_and" value="">
+            </line>
+            <line class='input-line'>
+              <label for="as_phr"> with the exact phrase: </label>
+              <input id="as_phr" class="input" type="text" name="as_phr" value="">
+            </line>
+            <line class='input-line'>
+              <label for="as_any"> with at least one of these words: </label>
+              <input id="as_any" class="input" type="text" name="as_any" value="">
+            </line>
+            <line class='input-line'>
+              <label for="as_not"> with none of these words: </label>
+              <input id="as_not" class="input" type="text" name="as_not" value="">
+            </line>
+            <line class='input-line'>
+              <label for="as_ttl"> with these words in the title: </label>
+              <input id="as_ttl" class="input" type="text" name="as_ttl" value="Data Scientist">
+            </line>
+            <line class='input-line'>
+              <label for="as_cmp"> from this company: </label>
+              <input id="as_cmp" class="input" type="text" name="as_cmp" value="">
+            </line>
+            <line class='input-line'>
+              <label> location: </label>
+              <input id="location" class="input" type="text" name="location" value="Pittsburgh">
+            </line>
+            <line class='input-line'>
+              <label> radius: </label>
+              <input id="radius" class="input" type="text" name="radius" value="25">
+            </line>
+            <input id="fetch-data-from-api-submit" class="submit" type="submit" name="submit" value="add jobs to fetch queue">
+          </form>
+        </div>
+        <div id="buttons">
+          <form class="api-form">
+            <input id="preview-data-button" class="submit off" type="submit" name="submit" value="Preview Jobs">
+          </form>
+          <form lass="api-form">
+            <input id="attach-summaries-submit" class="submit off" type="submit" name="submit" value="Fetch Summaries">
+          </form>
+          <form class="api-form">
+            <input id="create-xlsx-submit" class="submit off" type="submit" name="submit" value="Create .XLSX">
+          </form>
+          <form class="api-form">
+            <input id="clear-data-submit" class="submit off" type="submit" name="submit" value="Clear Jobs">
+          </form>
+        </div>
+        <div id="info">
+          <div id='estimate-container' class='info-container'>
+            <div class="info-label">
+              Search estimate:
+            </div>
+            <div id="estimate-count" class="info-number">
+            </div>
+          </div>
+          <div id='job-count-container' class='info-container'>
+            <div class="info-label">
+              Jobs:
+            </div>
+            <div id="job-count" class="info-number">
+            </div>
+          </div>
+          <div id='jobtype-count-container' class='info-container'>
+            <div class="info-label" class="info-number">
+              Job type attached:
+            </div>
+            <div id="jobtype-count">
+            </div>
+          </div>
+          <div id='salary-count-container' class='info-container'>
+            <div class="info-label" class="info-number">
+              Salaries attached:
+            </div>
+            <div id="salary-count">
+            </div>
+          </div>
+          <div id='summary-count-container' class='info-container'>
+            <div class="info-label" class="info-number">
+              Summaries attached:
+            </div>
+            <div id="summary-count">
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+
+
+      <div id='posts'>
+      </div>
+    </div>
+
+  </body>
+  <script src="js/socket.io.js"></script>
+  <script src="js/index.js"></script>
+</html>
