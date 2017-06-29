@@ -1,5 +1,11 @@
 let socket = io.connect([location.protocol, '//', location.host, location.pathname].join(''));
 
+var clientID = '';
+
+socket.on('setclientID', function(data) {
+  clientID = data;
+});
+
 // display the number of connected clients
 socket.on('totalResults', function (data) {
   document.getElementById('estimate-container').style.opacity = 1;
@@ -49,7 +55,7 @@ document.getElementById('fetch-data-from-api-submit').onclick = function (event)
   let xhttp = new XMLHttpRequest(),
       x = Array.from(document.getElementsByClassName('input')).map(function (input) {
         return `${input.id}=${input.value}&`;
-      }).join('').slice(0, -1);
+      }).join('').concat(`clientID=${clientID}`);
 
   if (!document.getElementById('fetch-data-from-api-submit').classList.contains('off')) {
     xhttp.open('POST', '/fetch-data-from-api', true);
@@ -140,8 +146,9 @@ document.getElementById('preview-data-button').onclick = function (event) {
         });
       }
     };
-    xhttp.open('GET', '/get-jobs', true);
-    xhttp.send();
+    xhttp.open('POST', '/get-jobs', true);
+    xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhttp.send(`clientID=${clientID}`);
   }
 };
 
@@ -171,14 +178,15 @@ document.getElementById('clear-data-submit').onclick = function (event) {
       document.getElementById('clear-data-submit').classList.add('off');
     }
   };
-  xhttp.open('GET', '/clear', true);
-  xhttp.send();
+  xhttp.open('POST', '/clear', true);
+  xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+  xhttp.send(`clientID=${clientID}`);
 };
 
 document.getElementById('create-xlsx-submit').onclick = function (event) {
   event.preventDefault();
   if (!document.getElementById('create-xlsx-submit').classList.contains('off')) {
-    window.open('/get-xlsx');
+    window.open(`/get-xlsx?id=${clientID}`);
   }
 };
 
@@ -191,7 +199,8 @@ document.getElementById('attach-summaries-submit').onclick = function (event) {
 
     let xhttp = new XMLHttpRequest();
 
-    xhttp.open('GET', '/attach-descriptions', true);
-    xhttp.send();
+    xhttp.open('POST', '/attach-descriptions', true);
+    xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhttp.send(`clientID=${clientID}`);
   }
 };

@@ -13,6 +13,7 @@
     "body-parser": "^1.17.2",
     "excel4node": "^1.2.1",
     "express": "^4.0.0",
+    "randomstring": "^1.1.5",
     "scrape-it": "^3.3.2",
     "socket.io": "^2.0.3"
   }

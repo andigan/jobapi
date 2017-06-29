@@ -13,7 +13,9 @@ var config = require('./config/config.js'),   // import config variables
 
     xl = require('excel4node'),
 
-    secrets = require('./config/secrets.js');
+    secrets = require('./config/secrets.js'),
+
+    randomstring = require('randomstring');
 
 // support parsing of application/json type post data
 app.use(bodyParser.json());
@@ -30,6 +32,8 @@ var server = app.listen(port, function () {
 
 // Initialize server-side socket.io
 var io = require('socket.io').listen(server);
+
+var jobsArrObj = {};
 
 var jobsArr = [], // placeholder for db
     limit = 25, // max number of results per api call
@@ -52,6 +56,28 @@ function makeUrlPromise(initial, query) {
 }
 
 
+io.on('connection', function (socket) {
+  // create a unique id for the connected client
+  var clientID = randomstring.generate({ length: 10, charset: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' });
+
+  jobsArrObj[clientID] =
+    {
+    socket: socket,
+    jobs: []
+    }
+
+  socket.emit('setclientID', clientID);
+
+  // this fires when the client disconnects
+  socket.on('disconnect', function () {
+    delete jobsArrObj[clientID];
+  });
+
+
+});
+
+
+
 
 // receives form input from client
 app.post('/fetch-data-from-api', function (req, res) {
@@ -66,7 +92,8 @@ app.post('/fetch-data-from-api', function (req, res) {
   var query = {
     query: `${as_and}%20"${as_phr}"%20${as_any}%20${as_not}%20${as_ttl}%20${as_cmp}`,
     location: req.body.location.toLowerCase().split(' ').join('+'),
-    radius: req.body.radius
+    radius: req.body.radius,
+    clientID: req.body.clientID
   };
 
   // send response
@@ -120,12 +147,11 @@ app.post('/fetch-data-from-api', function (req, res) {
     }, {concurrency: 2});
 
     // emit state changes to client
-    io.emit('updateDescriptionsCount', jobsArr.filter(function (job) {
+    jobsArrObj[query.clientID].socket.emit('updateDescriptionsCount', jobsArrObj[query.clientID].jobs.filter(function (job) {
       return !!job.description;
     }).length);
 
-    io.emit('enableProcessButtons');
-
+    jobsArrObj[query.clientID].socket.emit('enableProcessButtons');
   }
 
   mainFlow()
@@ -169,7 +195,7 @@ function mainFetch(query) {
 
     function initialCallback(totalResults) {
       console.log('initialCallback: Initial API fetch completed.');
-      io.emit('totalResults', totalResults[1]);
+      jobsArrObj[query.clientID].socket.emit('totalResults', totalResults[1]);
     }
 
 
@@ -198,7 +224,7 @@ function mainFetch(query) {
             // urls are unique(!); encoded differently for every api request
 
             // look for a match in the jobsArr
-            var match = jobsArr.find(function (oldJob) {
+            var match = jobsArrObj[query.clientID].jobs.find(function (oldJob) {
               return (oldJob.jobkey === newJob.jobkey) && (oldJob.date === newJob.date);
             });
 
@@ -219,7 +245,7 @@ function mainFetch(query) {
                 // assign the jobtype to the matched job
                 match.jobtype = (match.jobtype && (x === -1))? match.jobtype.concat(fetchedJobs[0].jobtype) : [fetchedJobs[0].jobtype];
 
-              io.emit('updateJobtypeCounter', jobsArr.filter(function (job) {
+              jobsArrObj[query.clientID].socket.emit('updateJobtypeCounter', jobsArrObj[query.clientID].jobs.filter(function (job) {
                 return !!job.jobtype;
               }).length);
 
@@ -237,16 +263,16 @@ function mainFetch(query) {
                 // assign the salary to the matched job
                 match.salary = (match.salary && (x === -1))? match.salary.concat(fetchedJobs[0].salaryhuman) : [fetchedJobs[0].salaryhuman];
 
-                io.emit('updateSalaryCounter', jobsArr.filter(function (job) {
+                jobsArrObj[query.clientID].socket.emit('updateSalaryCounter', jobsArrObj[query.clientID].jobs.filter(function (job) {
                   return !!job.salary;
                 }).length);
               };
             // else when the job is new and unique
             } else {
               // add the job to the jobs array
-              jobsArr = jobsArr.concat(newJob);
+              jobsArrObj[query.clientID].jobs = jobsArrObj[query.clientID].jobs.concat(newJob);
 
-              io.emit('updateJobsCounter', jobsArr.length);
+              jobsArrObj[query.clientID].socket.emit('updateJobsCounter', jobsArrObj[query.clientID].jobs.length);
             }
           });
         }
@@ -293,26 +319,26 @@ function mainFetch(query) {
 
 
 // return the jobsArr
-app.get('/get-jobs', function (req, res) {
-  let x = jobsArr.filter(function (job) {
+app.post('/get-jobs', function (req, res) {
+  let x = jobsArrObj[req.body.clientID].jobs.filter(function (job) {
     return !!job.description;
   });
 
-  res.send({summaryCount: x.length, jobs: jobsArr});
+  res.send({summaryCount: x.length, jobs: jobsArrObj[req.body.clientID].jobs});
 });
 
 // clear the data file
-app.get('/clear', function (req, res) {
+app.post('/clear', function (req, res) {
   config.keepGoing = false;
-  jobsArr = [];
+  jobsArrObj[req.body.clientID].jobs = [];
   res.send();
 });
 
 // construct and return a xlxs file
 app.get('/get-xlsx', function (req, res) {
-  var wb = new xl.Workbook(),          // Create a new instance of a Workbook class
-      ws = wb.addWorksheet('Indeed Jobs'), // Add Worksheets to the workbook
-      style = wb.createStyle({         // Create a reusable style
+    var wb = new xl.Workbook(),              // Create a new instance of a Workbook class
+        ws = wb.addWorksheet('Indeed Jobs'), // Add Worksheets to the workbook
+        style = wb.createStyle({             // Create a reusable style
 
         font: {
           color: '#000000',
@@ -320,9 +346,35 @@ app.get('/get-xlsx', function (req, res) {
         },
         numberFormat: '$#,##0.00; ($#,##0.00); -'
       }),
-      row = 0;
+      row = 1;
 
-  async.each(jobsArr, function (result, callback) {
+      ws.cell(row,1).string('job title').style(style);
+      ws.cell(row,2).string('company').style(style);
+      ws.cell(row,3).string('description').style(style);
+      ws.cell(row,4).string('job type').style(style);
+      ws.cell(row,5).string('salary').style(style);
+      ws.cell(row,6).string('city').style(style);
+      ws.cell(row,7).string('state').style(style);
+      ws.cell(row,8).string('country').style(style);
+      ws.cell(row,9).string('language').style(style);
+      ws.cell(row,10).string('formatted location').style(style);
+      ws.cell(row,11).string('source').style(style);
+      ws.cell(row,12).string('date').style(style);
+      ws.cell(row,13).string('snippet').style(style);
+      ws.cell(row,14).string('url').style(style);
+
+      ws.cell(row,15).string('latitude').style(style);
+      ws.cell(row,16).string('longitude').style(style);
+      ws.cell(row,17).string('jobkey').style(style);
+      ws.cell(row,18).string('sponsored').style(style);
+      ws.cell(row,19).string('expired').style(style);
+      ws.cell(row,20).string('indeedApply').style(style);
+      ws.cell(row,21).string('formatted location full').style(style);
+      ws.cell(row,22).string('formatted relative time').style(style);
+      ws.cell(row,23).string('stations').style(style);
+
+
+  async.each(jobsArrObj[req.query.id].jobs, function (result, callback) {
 
     row = row + 1;
 
@@ -339,13 +391,13 @@ app.get('/get-xlsx', function (req, res) {
     if (result.jobtype) {
       ws.cell(row,4).string(result.jobtype).style(style);
     } else {
-      ws.cell(row,4).string('not fetched').style(style);
+      ws.cell(row,4).string('---').style(style);
     };
 
     if (result.salary) {
       ws.cell(row,5).string(result.salary).style(style);
     } else {
-      ws.cell(row,5).string('not fetched').style(style);
+      ws.cell(row,5).string('---').style(style);
     };
 
 
@@ -375,15 +427,14 @@ app.get('/get-xlsx', function (req, res) {
   });
 });
 
-app.get('/attach-descriptions', function (req, res) {
+app.post('/attach-descriptions', function (req, res) {
   res.send();
 
-  addDescriptionsToJobs(jobsArr);
+  addDescriptionsToJobs(jobsArrObj[req.body.clientID].jobs, req.body.clientID);
 
 });
 
-function addDescriptionsToJobs(allJobsArr) {
-
+function addDescriptionsToJobs(allJobsArr, clientID) {
   Promise.map(allJobsArr.filter(function (job) {
     return !job.description;
   }), function (job) {
@@ -397,8 +448,8 @@ function addDescriptionsToJobs(allJobsArr) {
 
   }, {concurrency: 2}).then(function () {
     console.log('all description promises resolved.');
-    if (jobsArr.length > 1) {
-      io.emit('enableProcessButtons');
+    if (allJobsArr.length > 1) {
+      jobsArrObj[clientID].socket.emit('enableProcessButtons');
     }
   });
 
@@ -418,8 +469,8 @@ function addDescriptionsToJobs(allJobsArr) {
         job.description = result.description;
 
         // report number of jobs with descriptions
-        if (jobsArr.length > 1) {
-          io.emit('updateDescriptionsCount', jobsArr.filter(function (job) {
+        if (jobsArrObj[clientID].jobs.length > 1) {
+          jobsArrObj[clientID].socket.emit('updateDescriptionsCount', jobsArrObj[clientID].jobs.filter(function (job) {
             return !!job.description;
           }).length);
         }
