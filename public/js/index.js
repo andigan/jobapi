@@ -1,8 +1,12 @@
+
+document.getElementById('as_ttl').value = 'Data Scientist';
+document.getElementById('location').value = 'New York City';
+
 let socket = io.connect([location.protocol, '//', location.host, location.pathname].join(''));
 
 var clientID = '';
 
-socket.on('setclientID', function(data) {
+socket.on('setclientID', function (data) {
   clientID = data;
 });
 
@@ -21,6 +25,8 @@ socket.on('checkitout', function (data) {
 socket.on('updateJobsCounter', function (data) {
   document.getElementById('job-count-container').style.opacity = 1;
   document.getElementById('job-count').textContent = data;
+  document.getElementById('job-filter-count-container').style.opacity = 1;
+  document.getElementById('job-filter-count').textContent = data;
 });
 
 socket.on('updateSalaryCounter', function (data) {
@@ -41,10 +47,23 @@ socket.on('updateDescriptionsCount', function (data) {
 });
 
 socket.on('enableProcessButtons', function () {
+  previewData();
   document.getElementById('attach-summaries-submit').classList.remove('off');
   document.getElementById('create-xlsx-submit').classList.remove('off');
   document.getElementById('clear-data-submit').classList.remove('off');
 });
+
+socket.on('descriptionsAdded', function () {
+  document.getElementById('filter-box').style.display = 'block';
+  document.getElementById('totals').style.opacity = 1;
+  previewData();
+});
+
+socket.on('changeFilterCount', function (data) {
+  document.getElementById('job-filter-count').textContent = data;
+  previewData();
+});
+
 
 document.getElementById('fetch-data-from-api-submit').onclick = function (event) {
   event.preventDefault();
@@ -54,7 +73,7 @@ document.getElementById('fetch-data-from-api-submit').onclick = function (event)
 
   let xhttp = new XMLHttpRequest(),
       x = Array.from(document.getElementsByClassName('input')).map(function (input) {
-        return `${input.id}=${input.value}&`;
+        return `${input.id}=${encodeURIComponent(input.value)}&`;
       }).join('').concat(`clientID=${clientID}`);
 
   if (!document.getElementById('fetch-data-from-api-submit').classList.contains('off')) {
@@ -64,8 +83,14 @@ document.getElementById('fetch-data-from-api-submit').onclick = function (event)
   }
 };
 
-document.getElementById('preview-data-button').onclick = function (event) {
-  event.preventDefault();
+document.getElementById('preview-data-button').onclick = previewData;
+
+function previewData(event) {
+
+  if (event) {
+    event.preventDefault();
+  };
+
 
   if (!document.getElementById('preview-data-button').classList.contains('off')) {
     let xhttp = new XMLHttpRequest();
@@ -76,12 +101,7 @@ document.getElementById('preview-data-button').onclick = function (event) {
         let mixedresults = JSON.parse(xhttp.responseText),
             results = mixedresults.jobs;
 
-
-        document.getElementById('job-count-container').style.opacity = 1;
-        document.getElementById('job-count').textContent = results.length;
-
-        document.getElementById('summary-count-container').style.opacity = 1;
-        document.getElementById('summary-count').textContent = mixedresults.summaryCount;
+        document.getElementById('job-filter-count').textContent = results.length;
 
         document.getElementById('posts').innerHTML = '';
 
@@ -162,11 +182,14 @@ document.getElementById('clear-data-submit').onclick = function (event) {
 
       document.getElementById('estimate-container').style.opacity = 0;
       document.getElementById('job-count-container').style.opacity = 0;
+      document.getElementById('job-filter-count-container').style.opacity = 0;
+      document.getElementById('totals').style.opacity = 0;
       document.getElementById('summary-count-container').style.opacity = 0;
       document.getElementById('salary-count-container').style.opacity = 0;
       document.getElementById('jobtype-count-container').style.opacity = 0;
 
       document.getElementById('job-count').textContent = '';
+      document.getElementById('job-filter-count').textContent = '';
       document.getElementById('summary-count').textContent = '';
       document.getElementById('salary-count').textContent = '';
       document.getElementById('jobtype-count').textContent = '';
@@ -176,6 +199,9 @@ document.getElementById('clear-data-submit').onclick = function (event) {
       document.getElementById('attach-summaries-submit').classList.add('off');
       document.getElementById('create-xlsx-submit').classList.add('off');
       document.getElementById('clear-data-submit').classList.add('off');
+
+      document.getElementById('filter-box').style.display = 'none';
+      document.getElementById('filter-input').value = '';
     }
   };
   xhttp.open('POST', '/clear', true);
@@ -203,4 +229,22 @@ document.getElementById('attach-summaries-submit').onclick = function (event) {
     xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     xhttp.send(`clientID=${clientID}`);
   }
+};
+
+// document.getElementById('filter-input').oninput = function (event) {
+//   document.getElementById('filter-submit').style.backgroundColor = (event.target.value === '') ? 'grey' : '#00cbfc';
+// };
+
+document.getElementById('filter-submit').onclick = function (event) {
+  event.preventDefault();
+
+  let filterValue = document.getElementById('filter-input').value;
+
+  let xhttp = new XMLHttpRequest();
+
+  xhttp.open('POST', '/filter-results', true);
+  xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+  xhttp.send(`clientID=${clientID}&filtersearch=${encodeURIComponent(filterValue)}`);
+
+
 };

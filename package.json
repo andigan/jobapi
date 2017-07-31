@@ -11,6 +11,7 @@
     "async": "^2.4.1",
     "bluebird": "^3.5.0",
     "body-parser": "^1.17.2",
+    "case-insensitive": "^1.0.0",
     "excel4node": "^1.2.1",
     "express": "^4.0.0",
     "randomstring": "^1.1.5",

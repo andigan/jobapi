@@ -5,10 +5,19 @@
   padding:0;
 }
 
-#estimate-container, #job-count-container, #summary-count-container, #salary-count-container, #jobtype-count-container {
+#job-count-container, #job-filter-count-container, #summary-count-container, #salary-count-container, #jobtype-count-container {
   opacity: 0;
 }
 
+#estimate-container {
+  width: 80%;
+  margin: auto;
+  padding: 7px;
+}
+
+#preview-data-button {
+  display: none;
+}
 
 
 .info-container {
@@ -29,7 +38,10 @@ form {
 #info {
   background-color: #669066;
   width: 40%;
-  padding: 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
 }
 
 #posts {
@@ -43,6 +55,10 @@ form {
 
 #buttons {
   background-color: #6f6fca;
+  justify-content: flex-end;
+  flex-direction: column;
+  display: flex;
+  padding: 20px 0;
 }
 
 
@@ -96,7 +112,7 @@ label {
 
 .info-label {
   font-family: monospace;
-  font-size: 13px;
+  font-size: 17px;
   display: inline-block;
   font-variant: small-caps;
   width: 50%;
@@ -120,7 +136,6 @@ label {
   margin-left: 50px;
 }
 
-
 .job-company {
   color: #00ff6a;
   margin: 12px;
@@ -133,4 +148,57 @@ label {
 .job-snippet {
   margin: 12px;
   font-size: 10px;
+}
+
+#filter-box-container {
+    height: 90px;
+}
+
+
+#filter-box {
+  background-color: #ff54c1;
+  color: black;
+  display: none;
+}
+
+.filter-input-text {
+  background-color: rgba(0, 0, 0, 0.1);
+  height: 24px;
+  width: 50%;
+}
+
+.filter-input-line {
+  display: block;
+}
+
+.filter-label {
+  display: block;
+  width: 100%;
+}
+
+.input-line {
+  display: flex;
+}
+
+#filter-submit {
+  background-color: #00cbfc;
+}
+
+#totals {
+  background-color: #75ec7a;
+  padding: 20px;
+  width: 38%;
+  opacity: 0;
+  align-self: center;
+}
+
+#numbers {
+  padding: 20px;
+}
+
+#job-filter-count {
+  font-size: 20px;
+  margin: auto;
+  width: 100%;
+  text-align: center;
 }

@@ -34,7 +34,7 @@
             </line>
             <line class='input-line'>
               <label for="as_ttl"> with these words in the title: </label>
-              <input id="as_ttl" class="input" type="text" name="as_ttl" value="Data Scientist">
+              <input id="as_ttl" class="input" type="text" name="as_ttl" value="">
             </line>
             <line class='input-line'>
               <label for="as_cmp"> from this company: </label>
@@ -42,12 +42,24 @@
             </line>
             <line class='input-line'>
               <label> location: </label>
-              <input id="location" class="input" type="text" name="location" value="New York City">
+              <input id="location" class="input" type="text" name="location" value="">
             </line>
             <line class='input-line'>
               <label> radius: </label>
               <input id="radius" class="input" type="text" name="radius" value="25">
             </line>
+
+            <div id='estimate-container' class='info-container'>
+              <div class="info-label">
+                Search estimate:
+              </div>
+              <div id="estimate-count" class="info-number">
+              </div>
+            </div>
+
+
+
+
             <input id="fetch-data-from-api-submit" class="submit" type="submit" name="submit" value="add jobs to fetch queue">
           </form>
         </div>
@@ -66,46 +78,70 @@
           </form>
         </div>
         <div id="info">
-          <div id='estimate-container' class='info-container'>
-            <div class="info-label">
-              Search estimate:
+
+          <div id="numbers">
+            <div id='job-count-container' class='info-container'>
+              <div class="info-label">
+                Jobs:
+              </div>
+              <div id="job-count" class="info-number">
+              </div>
             </div>
-            <div id="estimate-count" class="info-number">
+            <div id='jobtype-count-container' class='info-container'>
+              <div class="info-label" class="info-number">
+                Job type attached:
+              </div>
+              <div id="jobtype-count">
+              </div>
             </div>
-          </div>
-          <div id='job-count-container' class='info-container'>
-            <div class="info-label">
-              Jobs:
+            <div id='salary-count-container' class='info-container'>
+              <div class="info-label" class="info-number">
+                Salaries attached:
+              </div>
+              <div id="salary-count">
+              </div>
             </div>
-            <div id="job-count" class="info-number">
-            </div>
-          </div>
-          <div id='jobtype-count-container' class='info-container'>
-            <div class="info-label" class="info-number">
-              Job type attached:
-            </div>
-            <div id="jobtype-count">
-            </div>
-          </div>
-          <div id='salary-count-container' class='info-container'>
-            <div class="info-label" class="info-number">
-              Salaries attached:
-            </div>
-            <div id="salary-count">
-            </div>
-          </div>
-          <div id='summary-count-container' class='info-container'>
-            <div class="info-label" class="info-number">
-              Summaries attached:
-            </div>
-            <div id="summary-count">
+            <div id='summary-count-container' class='info-container'>
+              <div class="info-label" class="info-number">
+                Summaries attached:
+              </div>
+              <div id="summary-count">
+              </div>
             </div>
           </div>
+
+          <div id='filter-box-container'>
+
+            <div id='filter-box'>
+              <form id="filter-form" class="api-form">
+                <label for="filter-input" class="filter-label"> filter results by searching job summaries for exact word or phrase: </label>
+                <line class='filter-input-line'>
+                  <input id="filter-input" class="filter-input-text" type="text" name="filter-input" value="">
+                </line>
+                <input id="filter-submit" class="submit" type="submit" name="submit" value="filter">
+              </form>
+            </div>
+          </div>
+
+
+
+          <div id="totals">
+            <div id='job-filter-count-container' class='info-container'>
+              <div id="job-filter-count" class="info-number">0
+              </div>
+            </div>
+
+          </div>
+
+
+
+
+
         </div>
 
+
+
       </div>
-
-
 
       <div id='posts'>
       </div>

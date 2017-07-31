@@ -15,7 +15,9 @@ var config = require('./config/config.js'),   // import config variables
 
     secrets = require('./config/secrets.js'),
 
-    randomstring = require('randomstring');
+    randomstring = require('randomstring'),
+
+    caseI = require('case-insensitive');
 
 // support parsing of application/json type post data
 app.use(bodyParser.json());
@@ -63,7 +65,8 @@ io.on('connection', function (socket) {
   jobsArrObj[clientID] =
     {
     socket: socket,
-    jobs: []
+    jobs: [],
+    filterIndexes: []
     }
 
   socket.emit('setclientID', clientID);
@@ -75,9 +78,6 @@ io.on('connection', function (socket) {
 
 
 });
-
-
-
 
 // receives form input from client
 app.post('/fetch-data-from-api', function (req, res) {
@@ -271,6 +271,7 @@ function mainFetch(query) {
             } else {
               // add the job to the jobs array
               jobsArrObj[query.clientID].jobs = jobsArrObj[query.clientID].jobs.concat(newJob);
+              jobsArrObj[query.clientID].filterIndexes = jobsArrObj[query.clientID].filterIndexes.concat(jobsArrObj[query.clientID].jobs.length - 1);
 
               jobsArrObj[query.clientID].socket.emit('updateJobsCounter', jobsArrObj[query.clientID].jobs.length);
             }
@@ -320,17 +321,21 @@ function mainFetch(query) {
 
 // return the jobsArr
 app.post('/get-jobs', function (req, res) {
-  let x = jobsArrObj[req.body.clientID].jobs.filter(function (job) {
-    return !!job.description;
+
+  let jobsToReturn = [];
+
+  jobsArrObj[req.body.clientID].filterIndexes.forEach( function (filterIndex) {
+    jobsToReturn = jobsToReturn.concat(jobsArrObj[req.body.clientID].jobs[filterIndex]);
   });
 
-  res.send({summaryCount: x.length, jobs: jobsArrObj[req.body.clientID].jobs});
+  res.send({jobs: jobsToReturn});
 });
 
 // clear the data file
 app.post('/clear', function (req, res) {
   config.keepGoing = false;
   jobsArrObj[req.body.clientID].jobs = [];
+  jobsArrObj[req.body.clientID].filterIndexes = [];
   res.send();
 });
 
@@ -346,35 +351,41 @@ app.get('/get-xlsx', function (req, res) {
         },
         numberFormat: '$#,##0.00; ($#,##0.00); -'
       }),
-      row = 1;
+  row = 1;
 
-      ws.cell(row,1).string('job title').style(style);
-      ws.cell(row,2).string('company').style(style);
-      ws.cell(row,3).string('description').style(style);
-      ws.cell(row,4).string('job type').style(style);
-      ws.cell(row,5).string('salary').style(style);
-      ws.cell(row,6).string('city').style(style);
-      ws.cell(row,7).string('state').style(style);
-      ws.cell(row,8).string('country').style(style);
-      ws.cell(row,9).string('language').style(style);
-      ws.cell(row,10).string('formatted location').style(style);
-      ws.cell(row,11).string('source').style(style);
-      ws.cell(row,12).string('date').style(style);
-      ws.cell(row,13).string('snippet').style(style);
-      ws.cell(row,14).string('url').style(style);
+  ws.cell(row,1).string('job title').style(style);
+  ws.cell(row,2).string('company').style(style);
+  ws.cell(row,3).string('description').style(style);
+  ws.cell(row,4).string('job type').style(style);
+  ws.cell(row,5).string('salary').style(style);
+  ws.cell(row,6).string('city').style(style);
+  ws.cell(row,7).string('state').style(style);
+  ws.cell(row,8).string('country').style(style);
+  ws.cell(row,9).string('language').style(style);
+  ws.cell(row,10).string('formatted location').style(style);
+  ws.cell(row,11).string('source').style(style);
+  ws.cell(row,12).string('date').style(style);
+  ws.cell(row,13).string('snippet').style(style);
+  ws.cell(row,14).string('url').style(style);
 
-      ws.cell(row,15).string('latitude').style(style);
-      ws.cell(row,16).string('longitude').style(style);
-      ws.cell(row,17).string('jobkey').style(style);
-      ws.cell(row,18).string('sponsored').style(style);
-      ws.cell(row,19).string('expired').style(style);
-      ws.cell(row,20).string('indeedApply').style(style);
-      ws.cell(row,21).string('formatted location full').style(style);
-      ws.cell(row,22).string('formatted relative time').style(style);
-      ws.cell(row,23).string('stations').style(style);
+  ws.cell(row,15).string('latitude').style(style);
+  ws.cell(row,16).string('longitude').style(style);
+  ws.cell(row,17).string('jobkey').style(style);
+  ws.cell(row,18).string('sponsored').style(style);
+  ws.cell(row,19).string('expired').style(style);
+  ws.cell(row,20).string('indeedApply').style(style);
+  ws.cell(row,21).string('formatted location full').style(style);
+  ws.cell(row,22).string('formatted relative time').style(style);
+  ws.cell(row,23).string('stations').style(style);
 
 
-  async.each(jobsArrObj[req.query.id].jobs, function (result, callback) {
+  let jobsToWriteToWorksheet = [];
+
+  jobsArrObj[req.query.id].filterIndexes.forEach( function (filterIndex) {
+    jobsToWriteToWorksheet = jobsToWriteToWorksheet.concat(jobsArrObj[req.query.id].jobs[filterIndex]);
+  });
+
+  async.each(jobsToWriteToWorksheet, function (result, callback) {
 
     row = row + 1;
 
@@ -449,7 +460,7 @@ function addDescriptionsToJobs(allJobsArr, clientID) {
   }, {concurrency: 2}).then(function () {
     console.log('all description promises resolved.');
     if (allJobsArr.length > 1) {
-      jobsArrObj[clientID].socket.emit('enableProcessButtons');
+      jobsArrObj[clientID].socket.emit('descriptionsAdded');
     }
   });
 
@@ -483,3 +494,21 @@ function addDescriptionsToJobs(allJobsArr, clientID) {
     }
   };
 };
+
+app.post('/filter-results', function (req, res) {
+  res.send();
+
+  jobsArrObj[req.body.clientID].filterIndexes = [];
+
+  jobsArrObj[req.body.clientID].jobs.forEach(function (job, i) {
+
+    if (job.description) {
+      if (caseI(job.description).indexOf(req.body.filtersearch) !== -1) {
+        jobsArrObj[req.body.clientID].filterIndexes = jobsArrObj[req.body.clientID].filterIndexes.concat(i);
+      };
+    };
+  });
+
+  jobsArrObj[req.body.clientID].socket.emit('changeFilterCount', jobsArrObj[req.body.clientID].filterIndexes.length);
+
+});
