@@ -1,7 +1,7 @@
 {
-  "name": "hello_world_example",
+  "name": "jobapi",
   "version": "1.0.0",
-  "description": "Hello World example",
+  "description": "jobapi",
   "author": "Andrew Nease <andrew.nease.code@gmail.com",
   "private": true,
   "scripts": {
